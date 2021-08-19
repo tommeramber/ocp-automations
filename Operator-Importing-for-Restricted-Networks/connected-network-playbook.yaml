@@ -1,5 +1,5 @@
 ---
-- name: Deploy Local Registry
+- name: Deploy the Local Registry
   hosts: localhost
   vars:
     password: "dummy"
