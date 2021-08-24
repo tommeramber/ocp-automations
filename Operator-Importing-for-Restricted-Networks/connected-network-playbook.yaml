@@ -106,6 +106,9 @@
           REGISTRY_HTTP_TLS_CERTIFICATE: /certs/myregistry_crt.crt
           REGISTRY_HTTP_TLS_KEY: /certs/myregistry_key.pem
 
+  - name: Podman save the registry image to tar
+    shell: "podman save > registryimage.tar docker.io/library/registry:2"
+    
   - name: generate auth data for pull-secret.json file
     shell: echo -n "{{user}}:{{password}}" | base64 -w0
     register: output
@@ -359,6 +362,7 @@
       dest: "{{item.dest}}"
     with_items:
       - {src: 'run.sh', dest: '/tmp/myregistry/data/run.sh'}
+      - {src: 'registryimage.tar', dest: '/tmp/myregistry/data/registryimage.tar'}
       - {src: 'my_mapping.txt', dest: '/tmp/myregistry/data/my_mapping.txt'}
       - {src: 'certified-operator-index-manifests/imageContentSourcePolicy.yaml', dest: '/tmp/myregistry/data/imageContentSourcePolicy.yaml'}
 
