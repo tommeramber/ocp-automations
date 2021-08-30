@@ -11,3 +11,11 @@ sudo ansible-galaxy collection install community.crypto
 sudo ansible-galaxy collection install containers.podman
 sudo ansible-galaxy collection install community.general 
 ```
+
+Cleanup
+
+```bash
+sudo rm -rf operators-packages.txt run.sh my_mapping.txt my-{{desired_operator}}-index-manifests
+sudo podman rm myregistry -f
+sudo rm -rf /tmp/myregistry
+```
