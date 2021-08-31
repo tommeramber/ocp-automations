@@ -1,0 +1,22 @@
+---
+- name: Generate the Skopeo commands for mirroring the operators required images to your local registry
+  shell: cat my_mapping.txt | awk '{print "sudo skopeo copy --all --authfile=/run/containers/0/auth.json docker://{{url.stdout}}"$1" docker://myregistry:5000"$1 " --dest-tls-verify=false"}' >> run.sh
+
+- name: Run the script with the skopeo commands
+  shell: sudo bash run.sh
+
+- name: "Copy 'run.sh', 'my_mapping.txt', 'imageContentSourcePolicy.yaml' to '/tmp/myregistry/data' for later compressing all of it together"
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{item.dest}}"
+  with_items:
+    - {src: 'run.sh', dest: '/tmp/myregistry/data/run.sh'}
+    - {src: 'registryimage.tar', dest: '/tmp/myregistry/data/registryimage.tar'}
+    - {src: 'my_mapping.txt', dest: '/tmp/myregistry/data/my_mapping.txt'}
+    - {src: 'my-{{index_image}}-index-manifests/imageContentSourcePolicy.yaml', dest: '/tmp/myregistry/data/imageContentSourcePolicy.yaml'}
+
+- name: Compress directory /tmp/myregsitry/data
+  community.general.archive:
+    path: /tmp/myregistry/data
+    dest: data.tar.gz
+    format: gz

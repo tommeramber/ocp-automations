@@ -1,0 +1,57 @@
+---
+- name: Pull the Marketplace index image
+  containers.podman.podman_image:
+    name: registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}}
+    auth_file: /tmp/pull-secret.json
+
+- name: Run the index image
+  containers.podman.podman_container:
+    name: "{{index_image}}-index"
+    image: registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}}
+    state: started
+    ports:
+      - 50051:50051
+
+- name: Run grpcurl to get the list of packages (Operators) available
+  shell: /usr/local/bin/grpcurl -plaintext myregistry:50051 api.Registry/ListPackages > operators-packages.txt
+
+- name: filtering for desired operators from the index list
+  shell: cat operators-packages.txt | grep "{{ required_operator }}" | sed 's/"//g'| awk '{print $2}' | head -n 1
+  register: filtering_result
+
+  # The playbook will "breakout" if this condition is met (the operator does not exist in the index image)
+- name: verifying that the requested operators are in the list
+  fail: 
+    msg: "The operator does not exist in the index image packages list"
+  when: filtering_result.stdout == ""
+
+- debug:
+    msg: "the operator {{filtering_result.stdout}} has been found"
+
+- name: deleting any prexisting index images
+  containers.podman.podman_image:
+    name: "myregistry:5000/myindeximages/my-{{index_image}}-index"
+    state: absent
+
+
+- name: 'Prunning the original index image and generate a new one: sudo /usr/local/bin/opm index prune -f registry.redhat.io/redhat/my-{{index_image}}-index:{{index_image_version}} -p {{ filtering_result.stdout }} -t my-{{index_image}}-index:v1"'
+  shell: "sudo /usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{ filtering_result.stdout }} -t my-{{index_image}}-index:v1"
+  register: prunning_output
+
+- debug:
+    msg: prunning_output.stdout
+
+- name: Stop the original index container
+  containers.podman.podman_container:
+    name: "{{index_image}}-index"
+    state: absent
+
+- name: Push new image to local registry
+  containers.podman.podman_image:
+    name: "my-{{index_image}}-index:v1"
+    push: yes
+    auth_file: /run/containers/0/auth.json
+    tag: v1
+    push_args:
+      dest: "myregistry:5000/myindeximages/my-{{index_image}}-index:v1"
+    validate_certs: no
