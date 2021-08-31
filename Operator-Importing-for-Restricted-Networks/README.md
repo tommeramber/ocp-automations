@@ -12,10 +12,9 @@ sudo ansible-galaxy collection install containers.podman
 sudo ansible-galaxy collection install community.general 
 ```
 
-Cleanup
+Make sure you follow the instractions in the following [README](roles/deploy-local-registry/tasks/README.md) before running the playbook.
 
+Once you made sure that the variables in the `playbook.yaml` file are in corralation with your environment versions, run:
 ```bash
-sudo rm -rf operators-packages.txt run.sh my_mapping.txt my-{{desired_operator}}-index-manifests
-sudo podman rm myregistry -f
-sudo rm -rf /tmp/myregistry
+sudo ansible-playbook playbook.yaml
 ```
