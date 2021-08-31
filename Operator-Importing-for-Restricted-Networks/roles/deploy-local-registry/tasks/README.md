@@ -4,7 +4,7 @@ The "myregistry:5000" is already configured properly using ansible variables and
 
 Authentication to Quay.io and will be performed using an access token generated for a robot account with minimal privileges
 
-1. Login to quay.io, or register if you don't have an account yet.
+1. Login to [quay.io](quay.io), or register if you don't have an account yet.
 
 
 2. Generate a new Robot Account (Go to the following page (use your account in the path obviously) and press "Create Robot Account".
