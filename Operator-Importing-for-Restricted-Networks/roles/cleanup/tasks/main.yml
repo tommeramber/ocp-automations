@@ -1,0 +1,31 @@
+---
+# tasks file for cleanup
+- name: Delete /tmp/myregistry Recursivly
+  file:
+    state: absent
+    path: /tmp/myregistry
+
+- name: Delete leftover files and dirs
+  file:
+    state: absent
+    path: "{{ item }}"
+  loop:
+    - my-{{index_image}}-index-manifests/
+    - run.sh  
+    - registryimage.tar 
+    - operators-packages.txt 
+    - my_mapping.txt
+
+- name: Delete myregistry container
+  containers.podman.podman_container:
+    name: "myregistry"
+    state: absent
+
+- name: Delete the index images
+  containers.podman.podman_image:
+    name: "{{ item }}"
+    state: absent
+    force: yes
+  loop:
+    - "my-{{index_image}}-index:v1"
+    - "registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}}"

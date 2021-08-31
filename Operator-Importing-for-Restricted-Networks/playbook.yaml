@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+  vars:
+    # In use in both: "run-custom-index-container-and-mirror" and "cleanup" roles
+    index_image: community-operator
+    index_image_version: v4.6
+
+  roles:
+
+    - role: deploy-local-registry
+      vars:
+        user: "dummy"
+        password: "dummy"
+
+    - role: install-required-tools
+      vars:
+        ocp_version: "4.6.8"
+        opm_version: "v1.18.0"
+        grpcurl_latest_version_number: "v1.8.2"
+
+    - role: run-custom-index-container-and-mirror 
+      vars:
+        required_operator: argocd
+    
+    - role: cleanup

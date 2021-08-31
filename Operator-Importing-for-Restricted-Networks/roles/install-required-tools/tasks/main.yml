@@ -1,0 +1,46 @@
+---
+# tasks file for prepare-index-image
+- name: "install skopeo"
+  yum:
+    name: podman
+    state: latest
+  become: yes
+
+- name: "check if opm already installed"
+  stat:
+    path: /usr/local/bin/opm
+  register: result_opm
+
+- name: "check if grpcurl already installed"
+  stat:
+    path: /usr/local/bin/grpcurl
+  register: result_grpcurl
+
+- name: "check if openshift client (oc)  already installed"
+  stat:
+    path: /usr/local/bin/oc
+  register: result_oc
+
+- name: "installing grpcurl {{ grpcurl_latest_version_number }}"
+  unarchive:
+    remote_src: yes
+    src: "https://github.com/fullstorydev/grpcurl/releases/download/{{grpcurl_latest_version_number}}/grpcurl_{{grpcurl_latest_version_number | replace('v','')}}_linux_x86_64.tar.gz"
+    dest: /usr/local/bin
+  when: result_grpcurl.stat.exists == false
+  register: test
+
+- debug:
+    msg: "{{test}}"
+
+- name: "installing opm {{opm_version}}"
+  get_url:
+    url: "https://github.com/operator-framework/operator-registry/releases/download/{{opm_version}}/linux-amd64-opm"
+    dest: "/usr/local/bin/opm"
+  when: result_opm.stat.exists == false
+
+- name: "installing openshift client (oc) {{ocp_version}}"
+  unarchive:
+    remote_src: yes
+    src: "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ocp_version}}/openshift-client-linux-{{ocp_version}}.tar.gz"
+    dest: "/usr/local/bin"
+  when: result_oc.stat.exists == false
