@@ -1,0 +1,21 @@
+---
+- name: "logging in to myregistry:5000 with podman"
+  command: sudo podman login --authfile /run/containers/0/auth.json myregistry:5000 --tls-verify=false
+  register: login_myregistry_output
+
+- debug: 
+    msg: "{{login_myregistry_output.stdout}}"
+
+- name: "logging in to quay.io with podman + robot account"
+  command: sudo podman login --authfile /run/containers/0/auth.json quay.io
+  register: login_quay_output
+
+- debug:
+    msg: "{{login_quay_output.stdout}}"
+
+- name: "logging in to registry.redhat.io with podman + Registry Service Account"
+  command: sudo podman login --authfile /run/containers/0/auth.json registry.redhat.io
+  register: login_redhat_registry_output
+
+- debug:
+    msg: "{{login_redhat_registry_output.stdout}}"

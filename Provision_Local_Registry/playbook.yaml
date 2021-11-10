@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  roles:
+    - role: cleanup
+
+    - role: deploy-local-registry
+      vars:
+        user: "dummy"
+        password: "dummy"
+

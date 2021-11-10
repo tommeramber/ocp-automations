@@ -1,0 +1,11 @@
+---
+# tasks file for cleanup
+- name: Delete "myregistry" Directory Recursivly
+  file:
+    state: absent
+    path: /tmp/myregistry
+
+- name: Delete myregistry container
+  containers.podman.podman_container:
+    name: "myregistry"
+    state: absent

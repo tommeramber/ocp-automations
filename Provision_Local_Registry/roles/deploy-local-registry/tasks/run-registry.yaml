@@ -1,0 +1,104 @@
+---
+- name: Install httpd, podman, httpd-tools
+  yum:
+    name: "{{ item }}"
+    state: latest
+  become: yes
+  loop:
+    - httpd
+    - podman
+    - httpd-tools
+
+- name: Create myregistry directory and sub-directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - /tmp/myregistry
+    - /tmp/myregistry/auth
+    - /tmp/myregistry/certs
+    - /tmp/myregistry/data
+
+- name: Add myregistry to /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: '127.0.0.1 myregistry'
+    insertbefore: BOF
+  become: yes
+
+- name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
+  community.crypto.openssl_privatekey:
+    path: /tmp/myregistry/certs/myregistry_key.pem
+
+- name: Generate an OpenSSL Certificate Signing Request
+  community.crypto.openssl_csr:
+    path: /tmp/myregistry/certs/myregistry.csr
+    privatekey_path: /tmp/myregistry/certs/myregistry_key.pem
+    common_name: myregistry
+
+- name: Generate a Self Signed OpenSSL certificate for myregistry
+  openssl_certificate:
+    path: /tmp/myregistry/certs/myregistry_crt.crt
+    privatekey_path: /tmp/myregistry/certs/myregistry_key.pem
+    csr_path: /tmp/myregistry/certs/myregistry.csr
+    provider: selfsigned
+
+- name: Copy registry crt file to anchors
+  copy:
+    src: /tmp/myregistry/certs/myregistry_crt.crt
+    dest: /etc/pki/ca-trust/source/anchors/
+
+- name: update-ca-trust
+  command: update-ca-trust extract
+
+- name: Gather service firewalld state
+  systemd:
+    name: firewalld
+    state: started
+  register: firewalld_status
+
+- name: debug firewall
+  debug: var=firewalld_status.state
+    
+
+- name: Add port 5000/tcp to firewalld
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: true
+  loop:
+    - 5000/tcp
+  when: firewalld_status.state == 'started'
+
+- name: Add http service to firewalld
+  firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: true
+  loop:
+    - http
+  when: firewalld_status.state == 'started'
+
+- name: Create a registry container
+  containers.podman.podman_container:
+    name: myregistry
+    image: docker.io/library/registry:2
+    state: started
+    ports:
+      - 5000:5000
+    volume:
+      - /tmp/myregistry/data:/var/lib/registry:z
+      - /tmp/myregistry/auth:/auth:z
+      - /tmp/myregistry/certs:/certs:z
+    env:
+        REGISTRY_AUTH: "htpasswd"
+        REGISTRY_AUTH_HTPASSWD_REALM: "Registry"
+        REGISTRY_HTTP_SECRET: "ALongRandomSecretForRegistry"
+        REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+        REGISTRY_HTTP_TLS_CERTIFICATE: /certs/myregistry_crt.crt
+        REGISTRY_HTTP_TLS_KEY: /certs/myregistry_key.pem
+
+- name: Podman save the registry image to tar
+  shell: "podman save > /tmp/myregistry/data/registryimage.tar docker.io/library/registry:2"

@@ -1,0 +1,5 @@
+---
+# tasks file for deploy-local-registry
+- import_tasks: run-registry.yaml
+- import_tasks: generate-pull-secret.yaml
+- import_tasks: login-to-external-registries.yaml
