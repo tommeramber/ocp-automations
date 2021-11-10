@@ -1,5 +1,3 @@
 ---
-# tasks file for deploy-local-registry
-- import_tasks: generate-custom-index-image.yaml
-- import_tasks: mirror-manifests-and-generate-mapping-file.yaml
+- import_tasks: get_required_images.yaml
 - import_tasks: skopeo-copy-the-relevant-images-and-compress.yaml

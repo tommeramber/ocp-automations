@@ -1,20 +1,18 @@
 ---
 # tasks file for cleanup
-- name: Delete /tmp/myregistry Recursivly
+- name: Delete /home/rocko/4_8_17/myregistry Recursivly
   file:
     state: absent
-    path: /tmp/myregistry
+    path: /home/rocko/4_8_17/myregistry
 
 - name: Delete leftover files and dirs
   file:
     state: absent
     path: "{{ item }}"
   loop:
-    - my-{{index_image}}-index-manifests/
     - run.sh  
-    - registryimage.tar 
-    - operators-packages.txt 
-    - my_mapping.txt
+    - images.txt
+    - imageContentSourcePolicy.yaml
 
 - name: Delete myregistry container
   containers.podman.podman_container:

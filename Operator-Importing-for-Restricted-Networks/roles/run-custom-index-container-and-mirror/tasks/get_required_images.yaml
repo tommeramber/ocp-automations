@@ -1,0 +1,41 @@
+---
+- name: Create index_image_data directory
+  file:
+    path: /tmp/index_image_data
+    state: directory
+
+- name: Skopeo Copy Index Image based on Chosen Market Place Image and OCP Version to /tmp/index_image_data dir
+  shell: skopeo copy --all --authfile=/run/containers/0/auth.json docker://registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} dir:/tmp/index_image_data
+
+- name: extract index db
+  shell: for i in /tmp/index_image_data/* ;do gunzip < $i 2> /dev/null | tar --strip-components 1 -C /tmp -xvf - database/index.db 2>/dev/null ; done
+  ignore_errors: yes
+
+- name: check for index.db file
+  stat: path=/tmp/index.db
+  register: index_db_stat
+
+- name: fail if no db file
+  fail: msg="Index.db could not be extracted"
+  when: index_db_stat.stat.exists==false
+
+- name: sqlite3 for the latest bundle version of the operator
+  shell: "sqlite3 /tmp/index.db \"select distinct operatorbundle_name from related_image order by 1;\" | grep {{ required_operator }} | tail -n 1"
+  register: latest_bundle
+
+- name: debug latest version of operator bundle
+  debug:
+    msg: "{{ latest_bundle.stdout }}"
+
+- name: get related images for the operator
+  shell: "sqlite3 /tmp/index.db \"select image from related_image where operatorbundle_name = '{{ latest_bundle.stdout }}' order by 1;\" > images.txt"
+
+- name: cleanup db file
+  file:
+    path: /tmp/index.db
+    state: absent
+
+- name: cleanup index_image_data dir
+  file:
+    path: /tmp/index_image_data
+    state: absent 

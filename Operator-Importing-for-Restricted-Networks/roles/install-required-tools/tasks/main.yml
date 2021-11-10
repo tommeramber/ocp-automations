@@ -2,9 +2,10 @@
 # tasks file for prepare-index-image
 - name: "install skopeo"
   yum:
-    name: podman
+    name: skopeo
     state: latest
   become: yes
+
 
 - name: "check if opm already installed"
   stat:

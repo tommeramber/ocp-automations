@@ -1,22 +1,39 @@
 ---
-- name: Generate the Skopeo commands for mirroring the operators required images to your local registry
-  shell: cat my_mapping.txt | awk '{print "sudo skopeo copy --all --authfile=/run/containers/0/auth.json docker://{{url.stdout}}"$1" docker://myregistry:5000"$1 " --dest-tls-verify=false"}' >> run.sh
+- name: Generate Run.sh with skopeo commands
+  shell: cat images.txt | awk '{print "skopeo copy --all --src-tls-verify=false --dest-tls-verify=false --authfile=/run/containers/0/auth.json docker://"$1" docker://myregistry:5000/"$1}' | sed 's,myregistry:5000/[^/]*,myregistry:5000,g' >> run.sh
+
+- name: chmod run.sh
+  file:
+    path: run.sh
+    mode: u+rx,g+rx,o+rx
 
 - name: Run the script with the skopeo commands
   shell: sudo bash run.sh
 
-- name: "Copy 'run.sh', 'my_mapping.txt', 'imageContentSourcePolicy.yaml' to '/tmp/myregistry/data' for later compressing all of it together"
+- name: generate imageContentSourcePolicy.yaml file for the operator
+  copy:
+    dest: imageContentSourcePolicy.yaml
+    content: |
+      apiVersion: operator.openshift.io/v1alpha1
+      kind: ImageContentSourcePolicy
+      metadata:
+        name: {{ required_operator }}
+      spec:
+        repositoryDigestMirrors:
+
+- name: add releavnt mirrors to imageContentSourcePolicy.yaml file
+  shell: "cat images.txt | awk '{print \"  - mirrors:\\n    - REPLACE_ME/PATH/TO/REPO\\n    source: \"$1}' | awk -F'@' '{print $1}' >> imageContentSourcePolicy.yaml"
+          
+- name: "Copy 'run.sh', 'imageContentSourcePolicy.yaml' to '/tmp/myregistry/data' for later compressing all of it together"
   copy:
     src: "{{ item.src }}"
     dest: "{{item.dest}}"
   with_items:
     - {src: 'run.sh', dest: '/tmp/myregistry/data/run.sh'}
-    - {src: 'registryimage.tar', dest: '/tmp/myregistry/data/registryimage.tar'}
-    - {src: 'my_mapping.txt', dest: '/tmp/myregistry/data/my_mapping.txt'}
-    - {src: 'my-{{index_image}}-index-manifests/imageContentSourcePolicy.yaml', dest: '/tmp/myregistry/data/imageContentSourcePolicy.yaml'}
+    - {src: 'imageContentSourcePolicy.yaml', dest: '/tmp/myregistry/data/imageContentSourcePolicy.yaml'}
 
 - name: Compress directory /tmp/myregsitry/data
   community.general.archive:
     path: /tmp/myregistry/data
-    dest: data.tar.gz
+    dest: "{{ latest_bundle.stdout }}.tar.gz"
     format: gz

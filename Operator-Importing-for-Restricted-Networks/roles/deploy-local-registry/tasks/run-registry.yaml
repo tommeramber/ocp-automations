@@ -57,6 +57,10 @@
     state: started
   register: firewalld_status
 
+- name: debug firewall
+  debug: var=firewalld_status.state
+    
+
 - name: Add port 5000/tcp to firewalld
   firewalld:
     port: "{{ item }}"
@@ -65,7 +69,7 @@
     immediate: true
   loop:
     - 5000/tcp
-  when: firewalld_status.state == "started"
+  when: firewalld_status.state == 'started'
 
 - name: Add http service to firewalld
   firewalld:
@@ -75,7 +79,7 @@
     immediate: true
   loop:
     - http
-  when: firewalld_status.state == "started"
+  when: firewalld_status.state == 'started'
 
 - name: Create a registry container
   containers.podman.podman_container:
@@ -97,4 +101,4 @@
         REGISTRY_HTTP_TLS_KEY: /certs/myregistry_key.pem
 
 - name: Podman save the registry image to tar
-  shell: "podman save > registryimage.tar docker.io/library/registry:2"
+  shell: "podman save > /tmp/myregistry/data/registryimage.tar docker.io/library/registry:2"

@@ -1,6 +1,6 @@
 ---
 - name: "logging in to myregistry:5000 with podman"
-  command: sudo podman login --authfile /run/containers/0/auth.json https://myregistry:5000 --tls-verify=false
+  command: sudo podman login --authfile /run/containers/0/auth.json myregistry:5000 --tls-verify=false
   register: login_myregistry_output
 
 - debug: 
