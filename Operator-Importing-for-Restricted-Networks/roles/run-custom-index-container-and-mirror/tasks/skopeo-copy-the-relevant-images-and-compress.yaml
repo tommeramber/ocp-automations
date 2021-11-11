@@ -7,6 +7,13 @@
     path: run.sh
     mode: u+rx,g+rx,o+rx
 
+
+- name: Add index image for the operator
+  shell: "/usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{ latest_bundle.stdout.split('.')[0] }} -t myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}; podman push --tls-verify=false --authfile=/run/containers/0/auth.json myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}"
+
+- name: Add index image to run.sh
+  shell: echo "skopeo copy --all --src-tls-verify=false --dest-tls-verify=false --authfile=/run/containers/0/auth.json docker://registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} docker://myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}" >> run.sh
+
 - name: Run the script with the skopeo commands
   shell: sudo bash run.sh
 
@@ -21,7 +28,7 @@
       spec:
         repositoryDigestMirrors:
 
-- name: add releavnt mirrors to imageContentSourcePolicy.yaml file
+- name: Add releavnt mirrors to imageContentSourcePolicy.yaml file
   shell: "cat images.txt | awk '{print \"  - mirrors:\\n    - REPLACE_ME/PATH/TO/REPO\\n    source: \"$1}' | awk -F'@' '{print $1}' >> imageContentSourcePolicy.yaml"
           
 - name: "Copy 'run.sh', 'imageContentSourcePolicy.yaml' to '/tmp/myregistry/data' for later compressing all of it together"

@@ -2,8 +2,8 @@
 - hosts: localhost
   vars:
     # In use in both: "run-custom-index-container-and-mirror" and "cleanup" roles
-    index_image: REPLACE_ME # certified-operator / community-operator / redhat-operator
-    index_image_version: v4.6 # change based on your OCP cluster
+    index_image: redhat-operator 
+    index_image_version: v4.6 
 
   roles:
 
@@ -14,12 +14,12 @@
 
     - role: install-required-tools
       vars:
-        ocp_version: "4.6.27" # change based on the OCP version of your cluster
+        ocp_version: "4.6.27"
         opm_version: "v1.18.0"
         grpcurl_latest_version_number: "v1.8.5"
 
     - role: run-custom-index-container-and-mirror 
       vars:
-        required_operator: REPLACE_ME # name of the operator
+        required_operator: serverless
     
     - role: cleanup
