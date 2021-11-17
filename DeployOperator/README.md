@@ -9,35 +9,3 @@ For the purpose of PoC, it is definitely satisfying.
 
 Note! :+1: if you have logged in to openshift with sudo/root user - run this playbook with sudo, otherwise - run without.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-2. Change Variables in the `playbook.yaml` file based on your required operator
-
-## Please Note
-
-1. Required Packages - Run the following commands prior to running the playbook;
-
-```bash
-sudo ansible-galaxy collection install community.crypto
-sudo ansible-galaxy collection install containers.podman
-sudo ansible-galaxy collection install community.general
-```
-
-2. The Ansible Playbook should be running with "sudo" due to elevated privilieges required to run some of the tasks.
-```bash
-sudo ansible-playbook playbook.yaml
-```
-
