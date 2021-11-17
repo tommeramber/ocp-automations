@@ -1,0 +1,78 @@
+---
+- name: Get packagemanifest name for desired operator 
+  shell: "oc get packagemanifest | grep -o {{ required_operator }} | head -n1 | awk '{print $1}'"
+  register: packagemanifest_name
+
+- name: Packagemanifest Found!
+  debug:
+    msg: "{{ packagemanifest_name.stdout }}"
+
+- name: Get operator catalog source name
+  shell: "oc describe packagemanifest/{{ packagemanifest_name.stdout }} | grep \"Catalog Source:\" | awk '{print $NF}'"
+  register: catalogsource_name
+
+- name: Get operator catalog source namespace
+  shell: "oc describe packagemanifest/{{ packagemanifest_name.stdout }} | grep \"Catalog Source Namespace:\" | awk '{print $NF}'"
+  register: catalogsource_namespace
+
+- name: Get operator default channel
+  shell: "oc describe packagemanifest/{{ packagemanifest_name.stdout }} | grep \"Default Channel:\" | awk '{print $NF}'"
+  register: operator_default_channel
+
+- name: Get operator installation strategy
+  shell: "oc describe packagemanifest/{{ packagemanifest_name.stdout }} | grep \"AllNamespaces\" -B1 | head -n1 | awk '{print $NF}'"
+  register: all_namespaces_installation_strategy
+
+- name: Generate Subscription.yaml file
+  copy:
+    dest: Subscription.yaml
+    content: |
+      apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+        name: {{ packagemanifest_name.stdout }}
+        namespace: {{ desired_namespace_for_installation }}
+      spec:
+        channel: {{ operator_default_channel.stdout }}
+        name: {{ required_operator }}
+        source: {{ catalogsource_name.stdout }}
+        sourceNamespace: {{ catalogsource_namespace.stdout }}
+
+- name: Is it an AllNamespaces Operator?
+  debug:
+    msg: "{{ all_namespaces_installation_strategy.stdout }}"
+
+- name: If installation Strategy == AllNamespaces, remove the "namespace" line from Subscription.yaml
+  shell: "sed -i '/^  namespace:/d' Subscription.yaml"
+  args:
+    warn: false
+  when: all_namespaces_installation_strategy.stdout=="true"
+
+- name: Generate Operator Group (AllNamespaces==false Operators only)
+  copy:
+    dest: OperatorGroup.yaml
+    content: |
+      apiVersion: operators.coreos.com/v1
+      kind: OperatorGroup
+      metadata:
+        name: {{required_operator}}-operatorgroup
+        namespace: {{ desired_namespace_for_installation }}
+      spec:
+        targetNamespaces:
+        - {{ desired_namespace_for_installation }}
+  when: all_namespaces_installation_strategy.stdout=="false"
+
+- name: Apply Subscription
+  shell: "oc apply -f Subscription.yaml -n {{desired_namespace_for_installation}}"
+
+- name: Apply OperatorGroup (AllNamespaces==false Operators only)
+  shell: "oc apply -f OperatorGroup.yaml -n {{desired_namespace_for_installation}}"
+  when: all_namespaces_installation_strategy.stdout=="false"
+
+- name: make sure you have operator pod up and running
+  shell: "oc get pods -n {{desired_namespace_for_installation}} | grep -i {{required_operator}}"
+  register: operator_pod
+
+- name: make sure you have operator pod up and running - Debug
+  debug:
+    msg: "{{operator_pod.stdout}}"

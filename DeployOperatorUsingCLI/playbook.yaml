@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  vars:
+    required_operator: "argocd-operator-helm"
+    desired_namespace_for_installation: argocd # will be ignored for AllNamespaces Installation Strategy
+
+  roles:
+    - role: install-operator
+      #vars:
+      # example: CHANGE_ME 
