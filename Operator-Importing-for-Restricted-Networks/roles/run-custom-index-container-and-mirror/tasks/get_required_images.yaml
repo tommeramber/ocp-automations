@@ -26,6 +26,7 @@
 - name: debug latest version of operator bundle
   debug:
     msg: "{{ latest_bundle.stdout }}"
+    #failed_when: latest_bundle.stdout == ''
 
 - name: get related images for the operator
   shell: "sqlite3 /tmp/index.db \"select image from related_image where operatorbundle_name = '{{ latest_bundle.stdout }}' order by 1;\" > images.txt"
