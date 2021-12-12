@@ -6,7 +6,6 @@
     state: latest
   become: yes
 
-
 - name: "check if opm already installed"
   stat:
     path: /usr/local/bin/opm

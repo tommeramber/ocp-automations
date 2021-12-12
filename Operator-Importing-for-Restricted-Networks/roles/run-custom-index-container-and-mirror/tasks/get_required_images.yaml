@@ -20,13 +20,12 @@
   when: index_db_stat.stat.exists==false
 
 - name: sqlite3 for the latest bundle version of the operator
-  shell: "sqlite3 /tmp/index.db \"select distinct operatorbundle_name from related_image order by 1;\" | grep {{ required_operator }} | tail -n 1"
+  shell: "sqlite3 /tmp/index.db \"select distinct operatorbundle_name from related_image order by 1;\" | grep {{ required_operator }} | grep -v beta | tail -n 1"
   register: latest_bundle
 
 - name: debug latest version of operator bundle
   debug:
     msg: "{{ latest_bundle.stdout }}"
-    #failed_when: latest_bundle.stdout == ''
 
 - name: get related images for the operator
   shell: "sqlite3 /tmp/index.db \"select image from related_image where operatorbundle_name = '{{ latest_bundle.stdout }}' order by 1;\" > images.txt"

@@ -7,37 +7,43 @@
     path: run.sh
     mode: u+rx,g+rx,o+rx
 
+- name: Run the script with the skopeo commands
+  shell: sudo bash run.sh
+  retries: 1
+
+- name: generate imageContentSourcePolicy.yaml file for the operator
+  template:
+    src: imageContentSourcePolicy.yaml.j2
+    dest: imageContentSourcePolicy.yaml
 
 - name: Add index image for the operator
   shell: "/usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{ latest_bundle.stdout.split('.')[0] }} -t myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}; podman push --tls-verify=false --authfile=/run/containers/0/auth.json myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}"
+  when: index_image != 'certified-operator'
+
+# This is a fix for a bug in certified-operators index which requires the pruning of cic-operator
+- name: Add index image for the operator
+  shell: "/usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{ latest_bundle.stdout.split('.')[0] }},cic-operator -t myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}; podman push --tls-verify=false --authfile=/run/containers/0/auth.json myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}"
+  when: index_image == 'certified-operator'
 
 - name: Add index image to run.sh
-  shell: echo "skopeo copy --all --src-tls-verify=false --dest-tls-verify=false --authfile=/run/containers/0/auth.json docker://registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} docker://myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}" >> run.sh
-
-- name: Run the script with the skopeo commands
-  shell: sudo bash run.sh
-
-- name: generate imageContentSourcePolicy.yaml file for the operator
-  copy:
-    dest: imageContentSourcePolicy.yaml
-    content: |
-      apiVersion: operator.openshift.io/v1alpha1
-      kind: ImageContentSourcePolicy
-      metadata:
-        name: {{ required_operator }}
-      spec:
-        repositoryDigestMirrors:
+  shell: echo "skopeo copy --all --src-tls-verify=false --dest-tls-verify=false --authfile=/run/containers/0/auth.json docker://registry.redhat.io/{{index_image}}-index:{{index_image_version}} docker://myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}" >> run.sh
 
 - name: Add releavnt mirrors to imageContentSourcePolicy.yaml file
-  shell: "cat images.txt | awk '{print \"  - mirrors:\\n    - REPLACE_ME/PATH/TO/REPO\\n    source: \"$1}' | awk -F'@' '{print $1}' >> imageContentSourcePolicy.yaml"
+  shell: "cat images.txt | while read line; do ORIGINAL_REPOSITORY=\"$(cut -d'/' -f1 <<< $line)\"; HEADLESS_IMAGE=\"$(cut -d'/' -f2- <<< $line)\"; echo -e \"  - mirrors:\\n    - myregistry:5000/$HEADLESS_IMAGE\\n    source: $ORIGINAL_REPOSITORY/$HEADLESS_IMAGE\"; done >> imageContentSourcePolicy.yaml"
+
+- name: Generate catalogSource.yaml
+  template:
+    src: catalogSource.yaml.j2
+    dest: catalogSource.yaml
           
-- name: "Copy 'run.sh', 'imageContentSourcePolicy.yaml' to '/tmp/myregistry/data' for later compressing all of it together"
+- name: "Copy 'run.sh', 'imageContentSourcePolicy.yaml', 'catalogSource.yaml' to '/tmp/myregistry/data' for later compressing all of it together"
   copy:
-    src: "{{ item.src }}"
-    dest: "{{item.dest}}"
+    src: "{{ item }}"
+    dest: "/tmp/myregistry/data/{{ item }}"
   with_items:
-    - {src: 'run.sh', dest: '/tmp/myregistry/data/run.sh'}
-    - {src: 'imageContentSourcePolicy.yaml', dest: '/tmp/myregistry/data/imageContentSourcePolicy.yaml'}
+    - run.sh
+    - imageContentSourcePolicy.yaml
+    - catalogSource.yaml
 
 - name: Compress directory /tmp/myregsitry/data
   community.general.archive:

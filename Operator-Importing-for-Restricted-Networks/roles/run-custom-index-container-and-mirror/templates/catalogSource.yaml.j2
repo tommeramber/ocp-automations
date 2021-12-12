@@ -1,0 +1,9 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: {{ latest_bundle.stdout.split('.')[0] }}-operators
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}
+  displayName: Imported {{ latest_bundle.stdout.split('.')[0] }} Operator

@@ -34,7 +34,7 @@
   community.crypto.openssl_csr:
     path: /tmp/myregistry/certs/myregistry.csr
     privatekey_path: /tmp/myregistry/certs/myregistry_key.pem
-    common_name: myregistry
+    common_name: myregistry.localdomain
 
 - name: Generate a Self Signed OpenSSL certificate for myregistry
   openssl_certificate:
@@ -100,5 +100,10 @@
         REGISTRY_HTTP_TLS_CERTIFICATE: /certs/myregistry_crt.crt
         REGISTRY_HTTP_TLS_KEY: /certs/myregistry_key.pem
 
+- name: Copy registryimage start command
+  copy:
+    src: registry
+    dest: /tmp/myregistry/data/
+
 - name: Podman save the registry image to tar
-  shell: "podman save > /tmp/myregistry/data/registryimage.tar docker.io/library/registry:2"
+  shell: "podman save > /tmp/myregistry/data/registry/registryimage.tar docker.io/library/registry:2"
