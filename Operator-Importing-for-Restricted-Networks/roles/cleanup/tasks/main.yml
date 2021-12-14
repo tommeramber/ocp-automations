@@ -1,9 +1,9 @@
 ---
 # tasks file for cleanup
-- name: Delete /home/rocko/4_8_17/myregistry Recursivly
+- name: Delete /tmp/myregistry Recursivly
   file:
     state: absent
-    path: /home/rocko/4_8_17/myregistry
+    path: /tmp/myregistry
 
 - name: Delete leftover files and dirs
   file:
