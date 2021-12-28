@@ -3,9 +3,9 @@ This Ansible Playbook is for PoC purposes only, and can & will be written in a m
 For the purpose of PoC, it is definitely satisfying.
 
 # Prerequistis
-1. Ansible
-2. Helm
-3. Podman
+1. [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+2. [Helm](https://helm.sh/docs/intro/install/)
+3. [Podman](https://podman.io/getting-started/installation)
 
 # Before Running The Playbook
 
@@ -38,5 +38,4 @@ That's it.
 By the end, you'll have an tar.gz file that contains the chart itself and the containers it requires, compressed locally to tar.gz files as well.
 
 
-The following GIF shows the entire process:
-
+[The following GIF shows the entire process](Animation.gif)
