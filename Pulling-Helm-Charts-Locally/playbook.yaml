@@ -1,0 +1,110 @@
+---
+- hosts: localhost
+  vars:
+  vars_prompt:
+    - name: "Chart"
+      prompt: "Enter the desired chart for pulling locally"
+      private: no
+
+  tasks:
+
+    - name: install yq
+      shell: wget https://github.com/mikefarah/yq/releases/download/v4.16.2/yq_linux_amd64 -O /usr/bin/yq &&    chmod +x /usr/bin/yq
+
+    - name: Helm Search Output for the desired Chart
+      shell: "helm search hub {{ Chart }} -o json"
+      register: search_hub_command_output
+
+    - debug:
+        msg: "{{ search_hub_command_output.stdout }}"
+
+    - pause:
+        prompt: "Enter the URL of the chart you want "
+        echo: yes
+      register: Chart_URL
+
+    - name: Helm get chart source name 
+      shell: "echo {{ Chart_URL.user_input }} | awk -F'/' '{print $(NF-1)}'"
+      register: Chart_Source_name
+
+    - name: Helm get repo url based on chart source name
+      shell: "curl -s https://raw.githubusercontent.com/helm/hub/master/config/repo-values.yaml | grep {{ Chart_Source_name.stdout }} | grep url | awk -F'url:' '{print $2}' | sed 's, ,,g'"
+      register: Chart_Repo_URL 
+
+    - name: Delete pre-existing repos with the same chart name
+      shell: "helm repo remove {{ Chart_Source_name.stdout }}"
+      ignore_errors: yes
+
+    - debug:
+        msg: "{{ Chart_Source_name.stdout }} {{ Chart_Repo_URL.stdout }}"
+
+    - name: Helm pull repo URL
+      shell: "helm repo add {{ Chart_Source_name.stdout }} {{ Chart_Repo_URL.stdout }}"
+
+    - name: Helm list repos
+      shell: "helm repo list"
+      register:  Helm_repo_list_output
+
+    - debug:
+        msg: "{{ Helm_repo_list_output.stdout_lines }}"
+
+    - name: Helm search in repo for available versions of the desired chart
+      shell: "helm search repo {{ Chart_Source_name.stdout }} -l"
+      register: helm_search_repo
+
+    - debug:
+        msg: "{{ helm_search_repo }}"
+
+    - pause:
+        prompt: "Enter: <Chart>:<Version> for the chart you want"
+        echo: yes
+      register: chart_and_version
+
+    - name: extract chart_name_only
+      shell: "echo {{ chart_and_version.user_input }} | awk -F':' '{print $1}' | awk -F'/' '{print $2}'"
+      register: chart_name_only
+
+    - name: extract repo and chart
+      shell: "echo {{chart_and_version.user_input}} | awk -F':' '{print $1}'"
+      register: repo_and_chart
+
+    - name: extract version only
+      shell: "echo {{chart_and_version.user_input}} | awk -F':' '{print $2}'"
+      register:  version_only
+
+    - name: helm pull chart
+      shell: "helm pull {{ repo_and_chart.stdout }} --version {{ version_only.stdout }}"
+
+    - name: untar pulled chart
+      shell: "tar xvf {{ chart_name_only.stdout }}-{{ version_only.stdout }}.tgz"
+
+    - name: delete tgz file
+      file:
+        name: "{{ chart_name_only.stdout }}-{{ version_only.stdout }}.tgz"
+        state: absent
+
+    - name: get relevant images for pulling
+      shell: "helm template {{ chart_name_only.stdout }}     | yq e '..' - | grep -E 'image:|baseImage:' | sed 's/[[:blank:]]//g; s/baseImage://g ; s/image://g' | sort -u > images.txt"
+
+    - name: podman pull all images
+      containers.podman.podman_image:
+        name: "{{ item }}"
+      with_lines: "cat ./images.txt"
+
+    - name: podman save pulled images
+      shell: "podman save > {{ chart_name_only.stdout }}/{{ item }}.tar.gz {{ item }}"
+      with_lines: "cat ./images.txt | awk -F'/' '{print $NF}' "
+
+    - name: delete images.txt
+      file:
+        name: images.txt
+        state: absent
+    
+
+    - name: compress everything
+      shell: "tar czvf {{ chart_name_only.stdout }}.tar.gz {{ chart_name_only.stdout }}"
+
+    - name: delete everything
+      file:
+        name: "{{ chart_name_only.stdout }}"
+        state: absent
