@@ -2,7 +2,7 @@
 - hosts: localhost
   vars:
     # In use in both: "run-custom-index-container-and-mirror" and "cleanup" roles
-    index_image: community-operator
+    index_image: redhat-operator
     index_image_version: v4.6
 
   roles:
@@ -20,6 +20,6 @@
 
     - role: run-custom-index-container-and-mirror 
       vars:
-        required_operator: argocd
+        required_operator: mesh
     
     - role: cleanup
