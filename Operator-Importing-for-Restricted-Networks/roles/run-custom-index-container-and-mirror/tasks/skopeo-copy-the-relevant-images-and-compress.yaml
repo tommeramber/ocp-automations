@@ -5,7 +5,7 @@
 - name: chmod run.sh
   file:
     path: run.sh
-    mode: u+rx,g+rx,o+rx
+    mode: '0755'
 
 - name: Run the script with the skopeo commands
   shell: sudo bash run.sh
@@ -25,11 +25,14 @@
   shell: "/usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{ latest_bundle.stdout.split('.')[0] }},cic-operator -t myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}; podman push --tls-verify=false --authfile=/run/containers/0/auth.json myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}"
   when: index_image == 'certified-operator'
 
+- name: Change Source/Target urls at run.sh
+  shell: cat <<< $(awk '{gsub("docker://[A-Za-z0-9:.]+/","docker://myregistry:5000/",$7);gsub("docker://myregistry:5000/","docker://MY_REGISTRY:5000/",$8)}1' run.sh) > run.sh
+
 - name: Add index image to run.sh
-  shell: echo "skopeo copy --all --src-tls-verify=false --dest-tls-verify=false --authfile=/run/containers/0/auth.json docker://registry.redhat.io/{{index_image}}-index:{{index_image_version}} docker://myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}" >> run.sh
+  shell: "echo skopeo copy --all --src-tls-verify=false --dest-tls-verify=false --authfile=/run/containers/0/auth.json docker://myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }} docker://MY_REGISTRY:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }} >> run.sh"
 
 - name: Add releavnt mirrors to imageContentSourcePolicy.yaml file
-  shell: "cat images.txt | while read line; do ORIGINAL_REPOSITORY=\"$(cut -d'/' -f1 <<< $line)\"; HEADLESS_IMAGE=\"$(cut -d'/' -f2- <<< $line)\"; echo -e \"  - mirrors:\\n    - myregistry:5000/$HEADLESS_IMAGE\\n    source: $ORIGINAL_REPOSITORY/$HEADLESS_IMAGE\"; done >> imageContentSourcePolicy.yaml"
+  shell: "cat images.txt | while read line; do ORIGINAL_REPOSITORY=\"$(cut -d'/' -f1 <<< $line)\"; HEADLESS_IMAGE=\"$(cut -d'/' -f2- <<< $line | sed -e 's/@.*$//' -e 's/:.*$//')\"; echo -e \"  - mirrors:\\n    - MY_REGISTRY:5000/$HEADLESS_IMAGE\\n    source: $ORIGINAL_REPOSITORY/$HEADLESS_IMAGE\"; done >> imageContentSourcePolicy.yaml"
 
 - name: Generate catalogSource.yaml
   template:
@@ -38,12 +41,16 @@
           
 - name: "Copy 'run.sh', 'imageContentSourcePolicy.yaml', 'catalogSource.yaml' to '/tmp/myregistry/data' for later compressing all of it together"
   copy:
-    src: "{{ item }}"
-    dest: "/tmp/myregistry/data/{{ item }}"
+    src: "{{ item.name }}"
+    dest: "/tmp/myregistry/data/{{ item.name }}"
+    mode: "{{ item.mode }}"
   with_items:
-    - run.sh
-    - imageContentSourcePolicy.yaml
-    - catalogSource.yaml
+    - name: run.sh
+      mode: '0755'
+    - name: imageContentSourcePolicy.yaml
+      mode: '0644'
+    - name: catalogSource.yaml
+      mode: '0644'
 
 - name: Compress directory /tmp/myregsitry/data
   community.general.archive:

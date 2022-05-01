@@ -9,7 +9,8 @@
 
 - name: extract index db
   shell: for i in /tmp/index_image_data/* ;do gunzip < $i 2> /dev/null | tar --strip-components 1 -C /tmp -xvf - database/index.db 2>/dev/null ; done
-  ignore_errors: yes
+  changed_when: false
+  failed_when: false
 
 - name: check for index.db file
   stat: path=/tmp/index.db
@@ -20,7 +21,7 @@
   when: index_db_stat.stat.exists==false
 
 - name: sqlite3 for the latest bundle version of the operator
-  shell: "sqlite3 /tmp/index.db \"select distinct operatorbundle_name from related_image order by 1;\" | grep {{ required_operator }} | grep -v beta | tail -n 1"
+  shell: "sqlite3 /tmp/index.db \"select distinct operatorbundle_name from related_image order by 1;\" | grep {{ required_operator }} | grep -v beta | sort -V | tail -n 1"
   register: latest_bundle
 
 - name: debug latest version of operator bundle
