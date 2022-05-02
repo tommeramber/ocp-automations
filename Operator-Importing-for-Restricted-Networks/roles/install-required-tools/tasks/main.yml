@@ -16,15 +16,21 @@
     path: /usr/local/bin/grpcurl
   register: result_grpcurl
 
-- name: "check if openshift client (oc)  already installed"
+- name: "check if openshift client (oc) already installed"
   stat:
     path: /usr/local/bin/oc
   register: result_oc
 
-- name: "installing grpcurl {{ grpcurl_latest_version_number }}"
+- name: "Check latest grpcurl version"
+  shell: 'curl --silent https://github.com/fullstorydev/grpcurl/releases/latest | sed -r "s/^.*tag\/v(.*)\".*$/\1/"'
+  register: grpcurl_latest
+  changed_when: false
+  failed_when: false
+
+- name: "installing grpcurl v{{grpcurl_latest.stdout}}"
   unarchive:
     remote_src: yes
-    src: "https://github.com/fullstorydev/grpcurl/releases/download/{{grpcurl_latest_version_number}}/grpcurl_{{grpcurl_latest_version_number | replace('v','')}}_linux_x86_64.tar.gz"
+    src: "https://github.com/fullstorydev/grpcurl/releases/download/v{{grpcurl_latest.stdout}}/grpcurl_{{grpcurl_latest.stdout}}_linux_x86_64.tar.gz"
     dest: /usr/local/bin
   when: result_grpcurl.stat.exists == false
   register: test
@@ -32,9 +38,15 @@
 - debug:
     msg: "{{test}}"
 
-- name: "installing opm {{opm_version}}"
+- name: "Check latest opm version"
+  shell: 'curl --silent https://github.com/operator-framework/operator-registry/releases/latest | sed -r "s/^.*tag\/v(.*)\".*$/\1/"'
+  register: opm_latest
+  changed_when: false
+  failed_when: false
+
+- name: "installing opm v{{opm_latest.stdout}}"
   get_url:
-    url: "https://github.com/operator-framework/operator-registry/releases/download/{{opm_version}}/linux-amd64-opm"
+    url: "https://github.com/operator-framework/operator-registry/releases/download/v{{opm_latest.stdout}}/linux-amd64-opm"
     dest: "/usr/local/bin/opm"
   when: result_opm.stat.exists == false
 
@@ -43,9 +55,15 @@
     path: /usr/local/bin/opm
     mode: u=rwx,g=rx,o=rx
 
-- name: "installing openshift client (oc) {{ocp_version}}"
+- name: "Check latest oc {{index_image_version}} version"
+  shell: "curl --silent https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-{{index_image_version|replace('v','')}}/ | grep 'name.*openshift-client-linux-.*.tar.gz' | sed -r 's/^.*openshift-client-linux-(.*).tar.gz.*$/\\1/'"
+  register: oc_latest
+  changed_when: false
+  failed_when: false
+
+- name: "installing openshift client (oc) v{{oc_latest.stdout}}"
   unarchive:
     remote_src: yes
-    src: "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ocp_version}}/openshift-client-linux-{{ocp_version}}.tar.gz"
+    src: "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-{{index_image_version|replace('v','')}}/openshift-client-linux-{{oc_latest.stdout}}.tar.gz"
     dest: "/usr/local/bin"
   when: result_oc.stat.exists == false

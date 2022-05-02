@@ -1,25 +1,25 @@
 ---
 - hosts: localhost
   vars:
-    # In use in both: "run-custom-index-container-and-mirror" and "cleanup" roles
-    index_image: redhat-operator
-    index_image_version: v4.6
+    index_image: # Choose one of the following: redhat-operator/certified-operator/community-operator
+    index_image_version: # cluster major version (with v prefix), e.g: v4.8
+    required_operator: # Operator name (partial ok), e.g: local/local-storage/local-storage-operator
 
-  roles:
-
-    - role: deploy-local-registry
+  tasks:
+  - block:
+    - include_role: 
+        name: deploy-local-registry
+      # You may change this credentials if you don't want the default docker repository credentials
       vars:
         user: "dummy"
         password: "dummy"
-
-    - role: install-required-tools
-      vars:
-        ocp_version: "4.6.27"
-        opm_version: "v1.18.0"
-        grpcurl_latest_version_number: "v1.8.5"
-
-    - role: run-custom-index-container-and-mirror 
-      vars:
-        required_operator: mesh
-    
-    - role: cleanup
+  
+    - include_role:
+        name: install-required-tools
+  
+    - include_role:
+        name: run-custom-index-container-and-mirror 
+  
+    always:
+    - include_role:
+        name: cleanup
