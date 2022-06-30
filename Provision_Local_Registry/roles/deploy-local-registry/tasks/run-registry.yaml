@@ -14,10 +14,10 @@
     path: "{{ item }}"
     state: directory
   loop:
-    - /tmp/myregistry
-    - /tmp/myregistry/auth
-    - /tmp/myregistry/certs
-    - /tmp/myregistry/data
+    - /home/mctux/myregistry
+    - /home/mctux/myregistry/auth
+    - /home/mctux/myregistry/certs
+    - /home/mctux/myregistry/data
 
 - name: Add myregistry to /etc/hosts
   lineinfile:
@@ -28,24 +28,24 @@
 
 - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
   community.crypto.openssl_privatekey:
-    path: /tmp/myregistry/certs/myregistry_key.pem
+    path: /home/mctux/myregistry/certs/myregistry_key.pem
 
 - name: Generate an OpenSSL Certificate Signing Request
   community.crypto.openssl_csr:
-    path: /tmp/myregistry/certs/myregistry.csr
-    privatekey_path: /tmp/myregistry/certs/myregistry_key.pem
+    path: /home/mctux/myregistry/certs/myregistry.csr
+    privatekey_path: /home/mctux/myregistry/certs/myregistry_key.pem
     common_name: myregistry
 
 - name: Generate a Self Signed OpenSSL certificate for myregistry
   openssl_certificate:
-    path: /tmp/myregistry/certs/myregistry_crt.crt
-    privatekey_path: /tmp/myregistry/certs/myregistry_key.pem
-    csr_path: /tmp/myregistry/certs/myregistry.csr
+    path: /home/mctux/myregistry/certs/myregistry_crt.crt
+    privatekey_path: /home/mctux/myregistry/certs/myregistry_key.pem
+    csr_path: /home/mctux/myregistry/certs/myregistry.csr
     provider: selfsigned
 
 - name: Copy registry crt file to anchors
   copy:
-    src: /tmp/myregistry/certs/myregistry_crt.crt
+    src: /home/mctux/myregistry/certs/myregistry_crt.crt
     dest: /etc/pki/ca-trust/source/anchors/
 
 - name: update-ca-trust
@@ -89,9 +89,9 @@
     ports:
       - 5000:5000
     volume:
-      - /tmp/myregistry/data:/var/lib/registry:z
-      - /tmp/myregistry/auth:/auth:z
-      - /tmp/myregistry/certs:/certs:z
+      - /home/mctux/myregistry/data:/var/lib/registry:z
+      - /home/mctux/myregistry/auth:/auth:z
+      - /home/mctux/myregistry/certs:/certs:z
     env:
         REGISTRY_AUTH: "htpasswd"
         REGISTRY_AUTH_HTPASSWD_REALM: "Registry"
@@ -101,4 +101,4 @@
         REGISTRY_HTTP_TLS_KEY: /certs/myregistry_key.pem
 
 - name: Podman save the registry image to tar
-  shell: "podman save > /tmp/myregistry/data/registryimage.tar docker.io/library/registry:2"
+  shell: "podman save > /home/mctux/myregistry/data/registryimage.tar docker.io/library/registry:2"

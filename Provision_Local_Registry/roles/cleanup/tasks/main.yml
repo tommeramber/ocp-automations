@@ -3,7 +3,7 @@
 - name: Delete "myregistry" Directory Recursivly
   file:
     state: absent
-    path: /tmp/myregistry
+    path: /home/mctux/myregistry
 
 - name: Delete myregistry container
   containers.podman.podman_container:

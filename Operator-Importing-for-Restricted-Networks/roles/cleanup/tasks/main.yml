@@ -18,6 +18,7 @@
     - images.txt
     - imageContentSourcePolicy.yaml
     - catalogSource.yaml
+    - packages.out
 
 - name: Delete myregistry container
   containers.podman.podman_container:
@@ -30,5 +31,4 @@
     state: absent
     force: yes
   loop:
-    - "my-{{index_image}}-index:v1"
     - "registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}}"
