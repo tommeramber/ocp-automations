@@ -46,5 +46,5 @@
 - name: Compress directory /tmp/myregsitry/data
   community.general.archive:
     path: /tmp/myregistry/data
-    dest: "{{ latest_bundle.stdout }}.tar.gz"
+    dest: "{{required_operator}}_ocp-{{index_image_version}}.tar.gz"
     format: gz
