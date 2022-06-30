@@ -3,8 +3,8 @@
   roles:
     - role: cleanup
 
-      #    - role: deploy-local-registry
-      #      vars:
-      #        user: "dummy"
-      #        password: "dummy"
+    - role: deploy-local-registry
+      vars:
+        user: "dummy"
+        password: "dummy"
 
