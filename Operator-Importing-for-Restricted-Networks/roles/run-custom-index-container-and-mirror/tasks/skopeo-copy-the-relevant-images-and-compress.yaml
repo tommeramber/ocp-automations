@@ -16,15 +16,6 @@
     src: imageContentSourcePolicy.yaml.j2
     dest: imageContentSourcePolicy.yaml
 
-- name: Add index image for the operator
-  shell: "/usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{ latest_bundle.stdout.split('.')[0] }} -t myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}; podman push --tls-verify=false --authfile=/run/containers/0/auth.json myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}"
-  when: index_image != 'certified-operator'
-
-# This is a fix for a bug in certified-operators index which requires the pruning of cic-operator
-- name: Add index image for the operator
-  shell: "/usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{ latest_bundle.stdout.split('.')[0] }},cic-operator -t myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}; podman push --tls-verify=false --authfile=/run/containers/0/auth.json myregistry:5000/{{ latest_bundle.stdout.split('.')[0] }}-index:{{ latest_bundle.stdout | regex_replace('^.*?\\.') }}"
-  when: index_image == 'certified-operator'
-
 - name: Change Source/Target urls at run.sh
   shell: cat <<< $(awk '{gsub("docker://[A-Za-z0-9:.]+/","docker://myregistry:5000/",$7);gsub("docker://myregistry:5000/","docker://MY_REGISTRY:5000/",$8)}1' run.sh) > run.sh
 

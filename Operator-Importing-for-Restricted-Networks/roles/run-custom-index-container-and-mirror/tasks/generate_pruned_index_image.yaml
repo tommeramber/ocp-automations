@@ -1,0 +1,33 @@
+---
+- name: Run the original index
+  containers.podman.podman_container:
+    name: temp_index
+    image: registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}}
+    state: started
+    ports:
+      - 50051:50051
+
+- name: GRPCURL Original Index
+  shell: "grpcurl -plaintext localhost:50051 api.Registry/ListPackages > packages.out"
+
+- name: Find exact package name
+  shell: "grep {{ required_operator }} packages.out | awk -F':' '{print $2}' | tr -d '[:space:]'"
+  register: exact_package_name
+
+- name: debug exact operator package name
+  debug:
+    msg: "{{ exact_package_name.stdout }}"
+
+- name: Add index image for the operator
+  shell: "/usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{exact_package_name.stdout}} -t myregistry:5000/{{exact_package_name.stdout}}-index:{{index_image_version}}; podman push --tls-verify=false --authfile=/run/containers/0/auth.json myregistry:5000/{{exact_package_name.stdout}}-index:{{index_image_version}}"
+  when: index_image != 'certified-operator'
+
+# This is a fix for a bug in certified-operators index which requires the pruning of cic-operator
+- name: Add index image for the operator
+  shell: "/usr/local/bin/opm index prune -f registry.redhat.io/redhat/{{index_image}}-index:{{index_image_version}} -p {{exact_package_name.stdout}},cic-operator -t myregistry:5000/{{exact_package_name.stdout}}-index:{{index_image_version}}; podman push --tls-verify=false --authfile=/run/containers/0/auth.json myregistry:5000/{{exact_package_name.stdout}}-index:{{index_image_version}}"
+  when: index_image == 'certified-operator'
+
+- name: Delete original index container
+  containers.podman.podman_container:
+    name: "temp_index"
+    state: absent

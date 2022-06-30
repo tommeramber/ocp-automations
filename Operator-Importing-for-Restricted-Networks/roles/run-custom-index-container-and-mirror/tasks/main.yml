@@ -1,3 +1,4 @@
 ---
 - import_tasks: get_required_images.yaml
+- import_tasks: generate_pruned_index_image.yaml
 - import_tasks: skopeo-copy-the-relevant-images-and-compress.yaml
