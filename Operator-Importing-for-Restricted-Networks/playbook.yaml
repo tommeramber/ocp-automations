@@ -1,8 +1,8 @@
 ---
 - hosts: localhost
   vars:
-    index_image: # Choose one of the following: redhat-operator/certified-operator/community-operator
-    index_image_version: # cluster major version (with v prefix), e.g: v4.8
+    index_image:  # Choose one of the following: redhat-operator/certified-operator/community-operator
+    index_image_version:  # cluster major version (with v prefix), e.g: v4.8
     required_operator: # Operator name (partial ok), e.g: local/local-storage/local-storage-operator
 
   tasks:
