@@ -36,4 +36,4 @@ jq '.auths += {"myregistry:5000": {"auth":"ZHVtbXk6ZHVtbXk="}}' /tmp/pull-secret
 
 ## Command to run in internal Network
 ### Copy the oc & openshift-install binaries to the PATH env var
-$ oc adm upgrade --allow-explicit-upgrade --to-image ${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}<sha256_sum_value> 
+$ oc adm upgrade --force --allow-explicit-upgrade=true --allow-upgrade-with-warnings=true --to-image=quay.io/openshift-release@sha256:REALLY_LONG_HASH
