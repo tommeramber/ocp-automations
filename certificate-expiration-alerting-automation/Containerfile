@@ -1,0 +1,12 @@
+FROM registry.access.redhat.com/ubi8/ubi:latest
+RUN rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm &&\
+    yum install -y podman skopeo curl jq wget &&\
+    yum clean all &&\
+    rm -rf /var/cache/yum &&\
+    wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz &&\
+    tar xzvf openshift-client-linux.tar.gz -C /usr/local/bin/ &&\
+    wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/oc-mirror.tar.gz &&\
+    tar xzvf oc-mirror.tar.gz -C /usr/bin/
+RUN mkdir -p /root/.docker/ &&\
+    chmod +x /usr/bin/oc-mirror
+CMD ["/usr/bin/bash"]

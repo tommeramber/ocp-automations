@@ -23,9 +23,9 @@ items:
 			 command: [ "/bin/bash", "-c" ]
 			 args:
 			 - |
-			   OUTPUT=$(oc extract cm/user-ca-bundle -n openshift-config --to=- | openssl x509 -checkend "7889231")
+			   OUTPUT=$(oc extract cm/user-ca-bundle -n openshift-config --to=- | openssl x509 -checkend "31556260")
 			   if [ "$OUTPUT" = "Certificate will expire" ] ; then
-			     echo "The user-ca-bundle certificate in namespace openshift-config will expire soon (3 month)"
+			     echo "The user-ca-bundle certificate in namespace openshift-config will expire soon (10 Years)"
 				 echo "Run the following command to see the expiration date:"
 				 echo "oc extract cm/user-ca-bundle -n openshift-config --to=- | openssl x509 -noout -enddate"
 				 exit 1
@@ -39,7 +39,7 @@ items:
     name: validate-custom-ingress-certificate-expiration
 	namespace: openshift-ops
   spec:
-    schedule: "0 9 * * 1-5" 
+    schedule: "0 9 * * 1-5"
 	concurrencyPolicy: Forbid
 	jobTemplate:
 	  spec:
@@ -56,9 +56,10 @@ items:
 			 args:
 			 - |
 			   SecretName=$(oc get ingresscontroller.operator default -o jsonpath='{.spec.defaultCertificate.name}' -n openshift-ingress-operator)
-			   OUTPUT=$(oc extract secret/$SecretName -n openshift-ingress --to=- | openssl x509 -checkend "7889231")
+			   OUTPUT=$(oc extract secret/$SecretName -n openshift-ingress --to=- | openssl x509 -checkend "315569260")
 			   if [ "$OUTPUT" = "Certificate will expire" ] ; then
-			     echo "The ingress certificate in the secret $SecretName under the namespace openshift-ingress will expire soon (3 month)"
+			     echo "The ingress certificate in the secret $SecretName under the namespace openshift-ingress will expire soon (10
+                             years)"
 				 echo "Run the following command to see the expiration date:"
 				 echo "oc extract secret/$SecretName -n openshift-ingress --to=- | openssl x509 -noout -enddate"
 				 exit 1
