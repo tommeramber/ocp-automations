@@ -1,0 +1,41 @@
+apiVersion: v1
+Kind: List
+items:
+- apiVersion: monitoring.coreos.com/v1
+  kind: PrometheusRule
+  metadata:
+    labels:
+	  name: customclusteralerts
+	name: validate-user-ca-bundle-expiration-cron-job-monitoring
+	namespace: openshift-monitoring
+  spec:
+    groups:
+	- name: cron-job-monitoring
+	  rules:
+	  - alert: CustomUserCABundleExpirationFailed
+	    annotations:
+		message: |
+		  validate-user-ca-bundle-expiration cron job failed CALL_OPENSHIFT_ADMIN
+		expr: kube_job_status_failed{job_name=~"^validate-user-ca-bundle-expiration.+",namespace="openshift-ops"}>0
+		for: 1m
+		labels: 
+		  severity: major
+- apiVersion: monitoring.coreos.com/v1
+  kind: PrometheusRule
+  metadata:
+    labels:
+	  name: customclusteralerts
+	name: validate-custom-ingress-certificate-expiration-cron-job-monitoring
+	namespace: openshift-monitoring
+  spec:
+    groups:
+	- name: cron-job-monitoring
+	  rules:
+	  - alert: CustomIngressCertificateExpirationFailed
+	    annotations:
+		message: |
+		  validate-custom-ingress-certificate-expiration cron job failed CALL_OPENSHIFT_ADMIN
+		expr: kube_job_status_failed{job_name=~"^validate-custom-ingress-certificate-expiration.+",namespace="openshift-ops"}>0
+		for: 1m
+		labels: 
+		  severity: major
